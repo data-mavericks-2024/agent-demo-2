@@ -1,0 +1,551 @@
+agents:
+  - agent: DictionaryLookup
+    description: 'Retrieves targeted table/column metadata from the database dictionary.'
+    parameters:
+      tables:
+        type: list
+        description: 'Tables (and optional columns) for dictionary lookup. e.g., ["table1", {"table2": ["col1", "col2"]}].'
+        example: ['CLM', {'PLC': ['PLC_ID', 'INS_ID']}]
+      information_types:
+        type: list
+        description: >
+          Types of metadata to retrieve:
+            - "table_description"
+            - "table_keys"
+            - "table_synonyms"
+            - "table_join_conditions"
+            - "column_description"
+            - "column_data_type"
+            - "column_correlations"
+            - "column_business_rules"
+        default:
+          - 'table_description'
+          - 'column_description'
+          - 'column_data_type'
+        example:
+          - 'table_description'
+          - 'table_keys'
+          - 'table_join_conditions'
+          - 'column_data_type'
+    output_schema:
+      - table_descriptions:
+          type: dictionary
+          description: 'Table descriptions (table_name: description).'
+          example: '{"BRKR": "Broker table info..."}'
+      - table_keys:
+          type: dictionary
+          description: 'Table keys (table_name: {primary_key, foreign_keys}).'
+          example: '{"BRKR": {"primary_key": "BRKR_ID", "foreign_keys": ["PLC.BRKR_ID"]}}'
+      - table_synonyms:
+          type: dictionary
+          description: 'Table synonyms (table_name: [synonyms]).'
+          example: '{"BRKR": ["Agent", "Producer", "Intermediary"] }'
+      - table_join_conditions:
+          type: list
+          description: 'Join conditions (list of {type, condition, table1, column1, table2, column2}).'
+          example: |
+            - type: 'join_condition'
+              condition: 'BRKR.BRKR_ID-JOINS-PLC.BRKR_ID'
+              table1: 'BRKR'
+              column1: 'BRKR_ID'
+              table2: 'PLC'
+              column2: 'BRKR_ID'
+      - column_descriptions:
+          type: dictionary
+          description: 'Column descriptions (table_name: {column_name: description}).'
+          example: '{"BRKR": {"BRKR_ID": "Broker ID...", "...": "..."}}'
+      - column_data_types:
+          type: dictionary
+          description: 'Column data types (table_name: {column_name: data_type}).'
+          example: '{"BRKR": {"BRKR_ID": "numerical", "...": "..."}}'
+      - column_correlations:
+          type: dictionary
+          description: 'Column correlations (table_name: {column_name: [correlated_columns]}).'
+          example: '{"BRKR": {"BRKR_ID": ["PLC.BRKR_ID"], "...": "..."}}'
+      - column_business_rules:
+          type: dictionary
+          description: 'Column business rules (table_name: {column_name: [rules]}).'
+          example: '{"BRKR": {"BRKR_ID": ["Unique", "Positive integer"], "...": "..."}}'
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "1",
+          "agent_type": "DictionaryLookup",
+          "parameters": {
+            "tables": ["BRKR", "PLC"],
+            "information_types": ["table_desc", "table_keys", "table_joins", "col_desc", "col_dtype"]
+          },
+          "output_schema": ["table_descriptions", "table_keys", "table_join_conditions", "column_descriptions", "column_data_types"],
+          "next_task_on_success": "2"
+        }
+    benefits:
+      - 'Targeted metadata retrieval.'
+      - 'Granular information type control.'
+      - 'Structured relationship output.'
+      - 'Standardized data types.'
+      - 'Improved workflow efficiency.'
+
+  - agent: SampleDataFetcher
+    description: Fetches sample data from specified tables and columns to provide context for analysis and query generation.
+    parameters:
+      tables:
+        type: list
+        description: 'List of tables (and optional columns) to fetch sample data from. e.g., ["table1", {"table2": ["col1", "col2"]}].'
+        example: ['CLM', {'PLC': ['PLC_ID', 'INS_ID']}]
+      sample_size:
+        type: integer
+        description: 'Number of sample rows to fetch per table (or globally). Defaults to 5.'
+        default: 5
+        optional: true
+      output_format:
+        type: string
+        description: 'Format for sample data output ("json", "tabular", "csv"). Defaults to "json".'
+        default: "json"
+        optional: true
+    output_schema:
+      - sample_data:
+          type: dictionary
+          description: 'Sample data in the specified format. Structure depends on output_format.'
+          example: |
+            {
+              "CLM": [
+                {"CLM_ID": 1, "PLC_ID": 101, "CLM_AMT": 5000},
+                {"CLM_ID": 2, "PLC_ID": 102, "CLM_AMT": 7500}
+              ],
+              "PLC": [
+                {"PLC_ID": 101, "INS_ID": 201, "PLC_START_DT": "2023-01-15"},
+                {"PLC_ID": 102, "INS_ID": 202, "PLC_START_DT": "2023-02-20"}
+              ]
+            }
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "2",
+          "agent_type": "SampleDataFetcher",
+          "parameters": {
+            "tables": ["CLM", {"PLC": ["PLC_ID", "CLM_AMT"]}],
+            "sample_size": 3,
+            "output_format": "json"
+          },
+          "output_schema": ["sample_data"],
+          "next_task_on_success": "3"
+        }
+    benefits:
+      - 'Provides targeted sample data for relevant tables/columns.'
+      - 'Reduces initial prompt size and context window usage.'
+      - 'Dynamic and on-demand data fetching.'
+      - 'Enhances context for subsequent agents (SQLGenerator, ResponseGenerator).'
+      - 'Improved workflow efficiency and scalability.'
+
+  - agent: DataAnalyzer
+    description: >
+      Analyzes provided datasets to identify relevant data patterns and potential
+      insights based on specified analysis types and contextual information.
+    parameters:
+      tables:
+        type: list
+        description: >
+          List of tables and columns to be analyzed. Specify as a list of strings
+          for tables, or a list of dictionaries with table names as keys and a
+          list of column names as values (e.g., ["table1", {"table2": ["col1", "col2"]}]).
+        example:
+          - "CLM"
+          - "PLC":
+              - "PLC_ID"
+              - "CLM_AMT"
+      analysis_types:
+        type: list
+        description: >
+          Types of data analysis to perform:
+            - "data_profile": Generate data profiles (min, max, avg, distinct, missing).
+            - "pattern_detection": Detect common data patterns (formats, value ranges).
+            - "value_distribution": Analyze value distributions (frequency, histograms).
+            - "correlation_analysis": Identify column correlations (within/across tables).
+            - "anomaly_detection": (Conditional) Detect data anomalies or outliers.
+        default:
+          - "data_profile"
+          - "pattern_detection"
+        example:
+          - "data_profile"
+          - "value_distribution"
+      user_query:
+        type: string
+        description: 'The original user query for context-aware analysis.'
+        optional: true
+        example: 'identify locations with highest claim frequency'
+      task_description:
+        type: string
+        description: 'Description of the current task for focused analysis.'
+        optional: true
+        example: 'Analyze claim amounts distribution to understand potential outliers.'
+    output_schema:
+      - data_patterns:
+          type: list
+          description: 'Structured patterns found in the data.'
+          example: |
+            - pattern_type: 'date_format'
+              column: 'CLM_DT'
+              format: 'YYYY-MM-DD'
+              example_values: ['2021-03-22', '2023-10-05']
+            - pattern_type: 'value_range'
+              column: 'CLM_AMT'
+              min_value: 5372.23
+              max_value: 48782.2
+      - potential_insights:
+          type: list
+          description: 'Actionable insights derived from the data analysis.'
+          example: |
+            - insight_type: 'data_quality'
+              description: 'CLM_CLOSE column has null values, indicating open claims.'
+              recommendation: 'Investigate open claims for impact on analysis.'
+            - insight_type: 'trend'
+              description: 'LOSS_TYPE "Water Damage" is a frequent claim type.'
+              recommendation: 'Analyze location/policy factors for Water Damage claims.'
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "2",
+          "agent_type": "DataAnalyzer",
+          "parameters": {
+            "tables": [ "CLM": ["CLM_AMT", "CLM_DT", "LOSS_TYPE", "CLM_CLOSE"] ],
+            "analysis_types": ["data_profile", "value_distribution"],
+            "user_query": "identify locations with highest frequency of insurance claims",
+            "task_description": "Analyze claim data for patterns and distributions."
+          },
+          "output_schema": ["data_patterns", "potential_insights"],
+          "next_task_on_success": "3"
+        }
+    benefits:
+      - 'Targeted data analysis based on specified types.'
+      - 'Context-aware analysis using user query and task description.'
+      - 'Structured and machine-readable data patterns output.'
+      - 'Actionable and categorized potential insights.'
+      - 'Enhanced utility for subsequent workflow tasks.'
+
+  - agent: SQLGenerator
+    description: Generates SQL queries from user queries, task descriptions, and schema info.
+    parameters:
+      user_query:
+        type: string
+        description: Original user query. e.g., 'List brokers in "Coastal Regions" and claim counts.'
+        example: 'List brokers in "Coastal Regions" and their claim counts.'
+      task_description:
+        type: string
+        description: Specific task description for SQL generation. e.g., 'Count claims per broker, filtered by coastal regions.'
+        example: 'Generate SQL to count claims per broker, filtered by coastal regions.'
+      schema_info:
+        type: dictionary
+        description: Database schema information (from DictionaryLookup). Includes table/column details, keys, joins.
+        example: |
+          {
+            "tables": {
+              "BRKR": { "desc": "Broker table...", "cols": {"BRKR_ID": {"desc": "Broker ID", "dtype": "num"}, "BRKR_NM": {"desc": "Broker Name", "dtype": "text"}, "BRKR_RG": {"desc": "Broker Region", "dtype": "text"}}, "pk": "BRKR_ID" },
+              "PLC": { "desc": "Policy table...", "cols": {"PLC_ID": {"desc": "Policy ID", "dtype": "num"}, "BRKR_ID": {"desc": "Broker ID", "dtype": "num"}, "CLM_COUNT": {"desc": "Claim Count", "dtype": "num"}}, "fk": ["BRKR.BRKR_ID"] }
+            },
+            "table_relationships": [ { "type": "fk", "from_table": "PLC", "from_col": "BRKR_ID", "to_table": "BRKR", "to_col": "BRKR_ID" } ]
+          }
+      data_insights:
+        type: dictionary
+        description: Optional data analysis insights (from DataAnalyzer). e.g., patterns, distributions.
+        optional: true
+        example: |
+          { "potential_insights": [ { "insight_type": "value_distribution", "desc": "Claim amounts skewed right.", "recommendation": "Use median/percentiles." } ] }
+      target_dialect:
+        type: string
+        description: Target SQL dialect. e.g., "SQLITE", "POSTGRESQL".
+        default: "SQLITE"
+        example: "POSTGRESQL"
+
+    output_schema:
+      - sql_query:
+          type: string
+          description: Generated SQL query string.
+          example: 'SELECT B.BRKR_NM, COUNT(P.PLC_ID) FROM BRKR B JOIN PLC P ON B.BRKR_ID = P.BRKR_ID WHERE B.BRKR_RG = "Coastal Regions" GROUP BY B.BRKR_NM;'
+      - query_explanation:
+          type: string
+          description: Explanation of the generated SQL.
+          optional: true
+          example: 'Joins BRKR and PLC on BRKR_ID, counts policies per broker in "Coastal Regions", grouped by broker name.'
+      - confidence_score:
+          type: number
+          description: Query generation confidence (0.0-1.0).
+          optional: true
+          example: 0.95
+
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "3",
+          "agent_type": "SQLGenerator",
+          "parameters": {
+            "user_query": "List brokers in coastal regions and claim counts",
+            "task_description": "Count claims per broker in coastal regions.",
+            "schema_info": { ... }, // (DictionaryLookup output here)
+            "target_dialect": "SQLITE"
+          },
+          "output_schema": ["sql_query", "query_explanation"],
+          "next_task_on_success": "4"
+        }
+    benefits:
+      - Context-rich SQL generation (query, task, schema, insights).
+      - Schema-aware, uses table relationships.
+      - Supports multiple SQL dialects.
+      - Provides query explanation.
+      - Confidence scoring.
+
+  - agent: SQLExecutor
+    description: Executes an SQL query against a Snowflake database and returns the results.
+    parameters:
+      sql_query:
+        type: string
+        description: SQL query to execute. Typically from SQLGenerator agent output.
+        example: SELECT * FROM BRKR WHERE BRKR_RG = "Coastal";
+      db_connection_string:
+        type: string
+        description: Database connection string for Snowflake.  **Replace placeholders
+          with your Snowflake credentials.**
+        example: "snowflake://<user>:<password>@<account_identifier>/<database_name>/<s\
+          chema_name>?warehouse=<warehouse_name> # Example Snowflake connection
+          string URI. # Ensure you replace <user>, <password>,
+          <account_identifier>, <database_name>, <schema_name>, and
+          <warehouse_name> # with your actual Snowflake details. For security in
+          production, avoid hardcoding credentials."
+        required: true
+      db_dialect:
+        type: string
+        description: Database dialect. For Snowflake, set to "SNOWFLAKE".
+        default: SQLITE
+        example: SNOWFLAKE
+        required: true
+      query_timeout_seconds:
+        type: integer
+        description: Maximum query execution time in seconds (prevents runaway queries).
+        default: 30
+        optional: true
+    output_schema:
+      - execution_result:
+          type: object
+          description: Structured result of SQL query execution. Contains "data" or "error".
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                description: Array of rows returned by the query (each row is a dictionary).
+                example: |
+                  - BRKR_ID: 101
+                    BRKR_NM: "Coastal Brokers Inc."
+                    BRKR_RG: "Coastal"
+                  - BRKR_ID: 102
+                    BRKR_NM: "Oceanic Agents"
+                    BRKR_RG: "Coastal"
+              column_names:
+                type: array
+                description: List of column names in the result set.
+                example:
+                  - BRKR_ID
+                  - BRKR_NM
+                  - BRKR_RG
+              row_count:
+                type: integer
+                description: Number of rows returned.
+                example: 2
+              execution_time_ms:
+                type: integer
+                description: Query execution time in milliseconds.
+                example: 120
+              error:
+                type: string
+                description: Error message if query execution failed (Null if successful).
+                example: 'SQL compilation error: error line 1 at position 7\n invalid identifier
+                  \"WHERE\"'
+                nullable: true
+    example_usage:
+      task_definition: >
+        {
+          "task_id": "4",
+          "agent_type": "SQLExecutor",
+          "parameters": {
+            "sql_query": "${tasks.3.output.sql_query}",
+            "db_connection_string": "snowflake://<your_user>:<your_password>@<your_account_identifier>/<your_database>/<your_schema>?warehouse=<your_warehouse>",
+            "db_dialect": "SNOWFLAKE"
+          },
+          "output_schema": ["execution_result"],
+          "next_task_on_success": "5",
+          "next_task_on_failure": null
+        }
+    benefits:
+      - Executes SQL queries against Snowflake databases.
+      - Handles Snowflake SQL dialect.
+      - Provides structured query results (data, column names, row count).
+      - Includes detailed error reporting in output.
+      - Prevents runaway queries with execution timeout.
+
+  - agent: ResponseGenerator
+    description: Synthesizes final response content from previous tasks (answer, summary, insights, recommendations). Formatting handled by OutputFormatter.
+    parameters:
+      user_query:
+        type: string
+        description: Original user query.
+        example: 'List brokers in coastal regions and their claim counts.'
+        required: true
+      dictionary_lookup_output:
+        type: dictionary
+        description: Output from DictionaryLookup (schema info).
+        schema_ref: "DictionaryLookup.output_schema"
+        optional: true
+      data_analyzer_output:
+        type: dictionary
+        description: Output from DataAnalyzer (data patterns, insights).
+        schema_ref: "DataAnalyzer.output_schema"
+        optional: true
+      sql_executor_output:
+        type: dictionary
+        description: Output from SQLExecutor (query results, execution status).
+        schema_ref: "SQLExecutor.output_schema"
+        optional: true
+
+    output_schema:
+      - final_response:
+          type: object
+          description: Structured response content (formatting by OutputFormatter).
+          schema:
+            type: object
+            properties:
+              answer:
+                type: string
+                description: Direct, concise answer to user query (if possible).
+                example: 'Brokers in coastal regions are: "Coastal Brokers Inc." and "Oceanic Agents", with claim counts of X and Y.'
+                optional: true
+              summary_of_analysis:
+                type: string
+                description: Brief summary of analysis steps and key findings.
+                example: 'Dictionary lookup for schema, data analysis for distribution, SQL for broker claim counts by region.'
+                optional: true
+              key_insights:
+                type: list
+                description: Key insights derived from analysis (prioritized).
+                example: |
+                  - "Coastal region brokers have higher average claim counts."
+                  - "'Water Damage' is frequent claim type in coastal regions."
+                optional: true
+              sql_query_used:
+                type: string
+                description: SQL query generated and executed.
+                optional: true
+                example: 'SELECT ... FROM ... WHERE ... GROUP BY ...'
+              data_results_summary:
+                type: string
+                description: Summary of data results (row counts, key values).
+                optional: true
+                example: 'Returned 2 coastal region brokers with claim counts.'
+              next_steps_recommendations:
+                type: list
+                description: Recommendations for further analysis or actions.
+                example: |
+                  - "Investigate reasons for higher coastal region claim counts."
+                  - "Explore factors for 'Water Damage' in coastal areas."
+                optional: true
+              workflow_status:
+                type: string
+                description: Workflow execution status ("success", "partial_success", "failure").
+                example: "success"
+              format_hint:
+                type: string
+                description: Hint for OutputFormatter on preferred format (e.g., "tabular").
+                optional: true
+                example: "tabular"
+
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "5",
+          "agent_type": "ResponseGenerator",
+          "parameters": {
+            "user_query": "List brokers in coastal regions and their claim counts",
+            "dictionary_lookup_output": "${tasks.1.output}",
+            "data_analyzer_output": "${tasks.2.output}",
+            "sql_executor_output": "${tasks.4.output}"
+          },
+          "output_schema": ["final_response"],
+          "next_task_on_success": "6",
+          "next_task_on_failure": null
+        }
+    benefits:
+      - Synthesizes comprehensive response content.
+      - Integrates outputs from workflow stages.
+      - Provides structured content (answer, summary, insights).
+      - Context-aware content generation.
+      - Hints at preferred output format.
+
+  - agent: OutputFormatter
+    description: Formats response content into user-friendly formats (text, table, graph, etc.).
+    parameters:
+      response_content:
+        type: dictionary
+        description: Response content from ResponseGenerator.
+        schema_ref: "ResponseGenerator.output_schema.final_response"
+        required: true
+      preferred_format:
+        type: string
+        description: 'Preferred format ("tabular", "textual", "graphical", "mixed", "auto"). Agent chooses format if "auto".'
+        default: "auto"
+        example: "tabular"
+        enum: ["tabular", "textual", "graphical", "mixed", "auto"]
+      format_hint:
+        type: string
+        description: 'Format hint from ResponseGenerator (e.g., "tabular").'
+        optional: true
+        example: "tabular"
+      format_options:
+        type: dictionary
+        description: Format-specific options (e.g., table headers, chart type).
+        optional: true
+        example: '{"tabular": {"include_headers": true, "max_rows": 10}, "graphical": {"chart_type": "bar", "x_axis": "Region", "y_axis": "Claim Count"}}'
+
+    output_schema:
+      - formatted_response:
+          type: object
+          description: Formatted response object.
+          schema:
+            type: object
+            properties:
+              format_type:
+                type: string
+                description: Chosen output format (e.g., "tabular_markdown").
+                example: "tabular_markdown"
+              formatted_content:
+                type: string
+                description: Formatted response content (e.g., Markdown table, plain text, graph JSON).
+                example: '| Broker Name | Claim Count |\n|---|---|\n| Coastal Brokers Inc. | 125 |\n| Oceanic Agents | 98 |'
+              content_metadata:
+                type: dictionary
+                description: Optional metadata about formatted content.
+                optional: true
+                example: '{"column_headers": ["Broker Name", "Claim Count"]}'
+
+    example_usage:
+      task_definition: |
+        {
+          "task_id": "6",
+          "agent_type": "OutputFormatter",
+          "parameters": {
+            "response_content": "${tasks.5.output.final_response}",
+            "preferred_format": "tabular",
+            "format_options": {
+              "tabular": {
+                "include_headers": true,
+                "max_rows": 15
+              }
+            }
+          },
+          "output_schema": ["formatted_response"],
+          "next_task_on_success": null,
+          "next_task_on_failure": null
+        }
+    benefits:
+      - Selects optimal output format.
+      - Supports text, table, graph, mixed formats.
+      - Decoupled formatting for modularity.
+      - Extensible with new formatters.
+      - Improves user experience with optimal formatting.

@@ -1,0 +1,1229 @@
+[
+    {
+        "user_query": "Tell me all the different types of building classifications we insure and how many policies are associated with each type.",
+        "normalized_query": "retrieve all building classification types insured and count associated policies for each type",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract distinct building classification types and their related policy counts from the database.",
+                "hints": {What are the names of all the insurance brokers, that have written policies for
+                hospitals in the state of texas, that have had a claim for water damage in the last
+                12 months
+                    "tables": [
+                        "LOC",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "LOC_BTYPE",
+                        "PLC_ID"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID",
+                        "LOC.LOC_ID-JOINS-INS.INS_LOC"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What are the various industry classifications of our insured entities and how do they correlate with the insurance divisions?",
+        "normalized_query": "What are the various industry classifications of insured entities and how do they correlate with insurance divisions?",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Retrieve all industry classifications of insured entities.",
+                "hints": {
+                    "tables": [
+                        "INS"
+                    ],
+                    "columns": [
+                        "INS_INDC"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve all insurance divisions available in the policy table.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_DIV"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Determine correlation between insured entities' industry classifications and insurance divisions.",
+                "hints": {
+                    "tables": [
+                        "INS",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "INS_INDC",
+                        "PLC_DIV"
+                    ],
+                    "joins": [
+                        "INS.INS_ID-JOINS-PLC.INS_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Show me the distribution of policy coverage limits across different geographical regions where our brokers operate.",
+        "normalized_query": "Show the distribution of policy coverage limits across geographical regions where brokers operate.",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract policy coverage limits from the PLC table.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "PLC_COVLMT"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID-JOINS-PLC_COV.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Filter results based on geographical regions from the BRKR table where brokers operate.",
+                "hints": {
+                    "tables": [
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR_RG"
+                    ],
+                    "joins": [
+                        "PLC.BRKR_ID-JOINS-BRKR.BRKR_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Group and aggregate policy coverage limits by geographical regions.",
+                "hints": {
+                    "tables": [
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "PLC_COVLMT",
+                        "BRKR_RG"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What are the common loss types for claims and how do they relate to the building types of the insured properties?",
+        "normalized_query": "what are the common loss types for claims and how do they relate to the building types of the insured properties",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Retrieve common loss types related to claims.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "LOSS_TYPE"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Explore the relationship between loss types and building types of insured properties.",
+                "hints": {
+                    "tables": [
+                        "CLM",
+                        "LOC"
+                    ],
+                    "columns": [
+                        "LOSS_TYPE",
+                        "LOC_BTYPE"
+                    ],
+                    "joins": [
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID",
+                        "LOC.LOC_ID-JOINS-INS.INS_LOC"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "I want to see how the construction year of a building impacts the premium amount of the associated policies.",
+        "normalized_query": "show impact of construction year on premium amount for associated policies",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the construction year of the buildings from the location table.",
+                "hints": {
+                    "tables": [
+                        "LOC"
+                    ],
+                    "columns": [
+                        "LOC_CY"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve premium amounts for policies from the policy table associated with the locations.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "LOC"
+                    ],
+                    "columns": [
+                        "PLC_PREM",
+                        "PLC_ID"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID",
+                        "INS.INS_LOC-JOINS-LOC.LOC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Analyze the relationship between construction year and premium amounts.",
+                "hints": {
+                    "tables": [],
+                    "columns": [],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What are the most frequent discount types applied to policies, and how do they affect the final premium?",
+        "normalized_query": "what are the most frequent discount types applied to policies and how do they affect the final premium",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify distinct discount types and their frequencies related to insurance policies.",
+                "hints": {
+                    "tables": [
+                        "DISC"
+                    ],
+                    "columns": [
+                        "DISC_TYPE"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Analyze the relationship between discount types and final premium amounts of policies.",
+                "hints": {
+                    "tables": [
+                        "DISC",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "DISC_TYPE",
+                        "PLC_PREM"
+                    ],
+                    "joins": [
+                        "DISC.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Show me the relationship between the specialization of brokers and the insurance divisions they handle.",
+        "normalized_query": "show relationship between broker specialization and insurance divisions",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the specialization of brokers from the Broker table.",
+                "hints": {
+                    "tables": [
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR_SPCL"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Identify the insurance divisions handled by brokers from the Policy table.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_DIV"
+                    ],
+                    "joins": [
+                        "PLC.BRKR_ID = BRKR.BRKR_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "How do the security and fire protection systems of insured properties affect the claim loss types and amounts?",
+        "normalized_query": "how do the security and fire protection systems of insured properties affect the claim loss types and amounts",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the relationship between security systems of insured properties and associated claim loss types.",
+                "hints": {
+                    "tables": [
+                        "LOC",
+                        "CLM"
+                    ],
+                    "columns": [
+                        "LOC.SEC",
+                        "CLM.LOSS_TYPE"
+                    ],
+                    "joins": [
+                        "LOC.LOC_ID-JOINS-INS.INS_LOC",
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Assess the impact of fire protection systems on the amounts claimed in insurance loss.",
+                "hints": {
+                    "tables": [
+                        "LOC",
+                        "CLM"
+                    ],
+                    "columns": [
+                        "LOC.FIRE",
+                        "CLM.CLM_AMT"
+                    ],
+                    "joins": [
+                        "LOC.LOC_ID-JOINS-INS.INS_LOC",
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What is the average claim amount for each loss type, and how does it compare to the average coverage limit for those policies?",
+        "normalized_query": "What is the average claim amount for each loss type compared to the average coverage limit for those policies?",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Calculate the average claim amount grouped by loss type.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "LOSS_TYPE",
+                        "CLM_AMT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Calculate the average coverage limit for those policies grouped by loss type.",
+                "hints": {
+                    "tables": [
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "PLC_COVLMT",
+                        "PLC_ID"
+                    ],
+                    "joins": [
+                        "PLC_COV.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Compare the results from STEP1 and STEP2.",
+                "hints": {
+                    "tables": [],
+                    "columns": [],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Can you show me the distribution of policy statuses and how they relate to the policy renewal dates?",
+        "normalized_query": "show distribution of policy statuses and their relation to policy renewal dates",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the distribution of policy statuses.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_STAT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Analyze how policy statuses relate to policy renewal dates.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_STAT",
+                        "PLC_RENEW"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Which table stores the contact information for insurance brokers and what are the relevant columns?",
+        "normalized_query": "which table stores the contact information for insurance brokers and what are the relevant columns",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the table that contains broker contact information, specifically focusing on insurance brokers.",
+                "hints": {
+                    "tables": [
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR_CONTACT",
+                        "BRKR_EMAIL"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "List the relevant columns associated with the broker contact details in the identified table.",
+                "hints": {
+                    "tables": [
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR_ID",
+                        "BRKR_NM",
+                        "BRKR_CONTACT",
+                        "BRKR_EMAIL"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "How do I find the total coverage limit for a specific policy number, including the breakdown by individual coverages?",
+        "normalized_query": "find total coverage limit for policy number and breakdown by individual coverages",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the total coverage limit for the specified policy number.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "PLC_COVLMT",
+                        "PLC_NUM"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID-JOINS-PLC_COV.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve breakdown of individual coverages associated with the policy.",
+                "hints": {
+                    "tables": [
+                        "COV",
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "COV.C2",
+                        "PLC_COV.PLC_COVLMT"
+                    ],
+                    "joins": [
+                        "PLC_COV.COV_ID-JOINS-COV.C1"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Where can I locate the details of discounts applied to a policy, and how do I calculate the net premium after discounts?",
+        "normalized_query": "retrieve details of discounts applied to a policy and calculate the net premium after discounts",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Retrieve details of discounts applied to a specific policy.",
+                "hints": {
+                    "tables": [
+                        "DISC",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "DISC.DISC_TYPE",
+                        "DISC.DISC_AMT",
+                        "PLC.PLC_NUM"
+                    ],
+                    "joins": [
+                        "DISC.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Calculate the net premium after applying discounts.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "DISC"
+                    ],
+                    "columns": [
+                        "PLC.PLC_PREM",
+                        "DISC.DISC_AMT"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID-JOINS-DISC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What are the different types of fees that can be associated with a policy, and how do I determine the total fee amount?",
+        "normalized_query": "what are the different types of fees associated with an insurance policy and how can I determine the total fee amount",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the types of fees associated with insurance policies.",
+                "hints": {
+                    "tables": [
+                        "FEE"
+                    ],
+                    "columns": [
+                        "FEE_TYPE"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Calculate the total fee amount for a given policy.",
+                "hints": {
+                    "tables": [
+                        "FEE",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "FEE_AMT",
+                        "PLC_ID"
+                    ],
+                    "joins": [
+                        "FEE.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "How do I find the industry classification of an insured entity based on their policy number?",
+        "normalized_query": "how to find the industry classification of an insured entity based on policy number",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the industry classification of the insured entity using their policy number.",
+                "hints": {
+                    "tables": [
+                        "INS",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "INS_INDC",
+                        "PLC_NUM"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Where can I find the description of a specific coverage type based on its coverage ID?",
+        "normalized_query": "what is the description of a coverage type based on coverage id?",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Retrieve the description of the coverage type based on its unique identifier.",
+                "hints": {
+                    "tables": [
+                        "COV"
+                    ],
+                    "columns": [
+                        "C1",
+                        "C3"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "How do I map a claim number to the corresponding policy number and the insured entity's name?",
+        "normalized_query": "how do i map a claim number to the corresponding policy number and the insured entities name",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the claim number from the claims table to relate it to the policy.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM_NUM",
+                        "PLC_ID"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve the policy number from the policy table based on the PLC_ID obtained from the claim.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_NUM"
+                    ],
+                    "joins": [
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Get the insured entity's name from the insured table using the reference ID from the policy table.",
+                "hints": {
+                    "tables": [
+                        "INS"
+                    ],
+                    "columns": [
+                        "INS_NM"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Which table stores the geographical information of insured properties, and what are the relevant columns for address details?",
+        "normalized_query": "which table stores the geographical information of insured properties and what are the relevant columns for address details",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the table that contains geographical information of insured properties.",
+                "hints": {
+                    "tables": [
+                        "LOC"
+                    ],
+                    "columns": [
+                        "LOC_ADDR",
+                        "LOC_CITY",
+                        "LOC_STATE",
+                        "LOC_ZIP"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "How do I determine the adjuster assigned to a claim based on the claim number and find their contact information?",
+        "normalized_query": "retrieve adjuster information for claim by claim number",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the claim record associated with the provided claim number.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM_ID",
+                        "CLM_NUM"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Extract the adjuster assigned to the identified claim.",
+                "hints": {
+                    "tables": [
+                        "ADJ"
+                    ],
+                    "columns": [
+                        "ADJ_ID",
+                        "ADJ_CONTACT"
+                    ],
+                    "joins": [
+                        "CLM.ADJ_ID-JOINS-ADJ.ADJ_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Where can I find the underwriting notes for a specific policy, and what information do they typically contain?",
+        "normalized_query": "what information do underwriting notes typically contain for a specific policy",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify the policy for which the underwriting notes are needed.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_ID",
+                        "PLC_UNDNT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve the underwriting notes associated with the identified policy.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_UNDNT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Determine the typical contents of underwriting notes.",
+                "hints": {
+                    "tables": [],
+                    "columns": [],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Give me the names of all insured entities in California that have filed claims for water damage in the last year.",
+        "normalized_query": "give me the names of all insured entities in california that have filed claims for water damage in the last year",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter insured entities located in California.",
+                "hints": {
+                    "tables": [
+                        "INS",
+                        "LOC"
+                    ],
+                    "columns": [
+                        "INS_NM",
+                        "LOC_STATE"
+                    ],
+                    "joins": [
+                        "INS.INS_LOC-JOINS-LOC.LOC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Retrieve claims made for water damage within the last year.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM_ID",
+                        "LOSS_TYPE",
+                        "CLM_DT"
+                    ],
+                    "joins": [
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Join insured entities from step 1 with claims from step 2 to aggregate relevant data.",
+                "hints": {
+                    "tables": [
+                        "INS",
+                        "CLM"
+                    ],
+                    "columns": [
+                        "INS.INS_NM",
+                        "CLM.LOSS_TYPE"
+                    ],
+                    "joins": [
+                        "INS.INS_ID-JOINS-PLC.INS_ID",
+                        "PLC.PLC_ID-JOINS-CLM.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Show me the total premium collected for policies handled by brokers specializing in financial insurance in the Northeast region.",
+        "normalized_query": "Show total premium collected for policies handled by brokers specializing in financial insurance in the northeast region",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter policies based on broker specialty in financial insurance.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "PLC.PLC_NUM",
+                        "BRKR.BRKR_SPCL"
+                    ],
+                    "joins": [
+                        "PLC.BRKR_ID-JOINS-BRKR.BRKR_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Further filter brokers based on their operating region (northeast).",
+                "hints": {
+                    "tables": [
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR.BRKR_RG"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Calculate the total premium collected from the filtered policies.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC.PLC_PREM"
+                    ],
+                    "joins": []
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "List all policies with a coverage limit greater than $1 million that have received a loyalty discount and have fire protection systems.",
+        "normalized_query": "list all policies with a coverage limit greater than 1000000 that have received a loyalty discount and have fire protection systems",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract all policies that have a coverage limit greater than 1 million.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "PLC_COV"
+                    ],
+                    "columns": [
+                        "PLC_COVLMT"
+                    ],
+                    "joins": [
+                        "PLC_COV.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Filter policies that have received a loyalty discount.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "DISC"
+                    ],
+                    "columns": [
+                        "DISC_TYPE"
+                    ],
+                    "joins": [
+                        "DISC.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Include only those policies that have fire protection systems.",
+                "hints": {
+                    "tables": [
+                        "LOC"
+                    ],
+                    "columns": [
+                        "LOC_FIRE"
+                    ],
+                    "joins": [
+                        "LOC.LOC_ID-JOINS-INS.INS_LOC"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Find the average claim amount for policies issued to companies in the manufacturing industry with building types classified as warehouses.",
+        "normalized_query": "find the average claim amount for policies issued to companies in the manufacturing industry with building types classified as warehouses",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter policies issued to companies in the manufacturing industry.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "INS"
+                    ],
+                    "columns": [
+                        "INS.INS_TYPE",
+                        "INS.INS_INDC"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Filter insured locations classified as warehouses.",
+                "hints": {
+                    "tables": [
+                        "LOC"
+                    ],
+                    "columns": [
+                        "LOC.LOC_BTYPE"
+                    ],
+                    "joins": [
+                        "INS.INS_LOC-JOINS-LOC.LOC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Calculate the average claim amount for the filtered policies.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM.CLM_AMT"
+                    ],
+                    "joins": [
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Show me the names of brokers who have handled policies with early claim investigation fees and the corresponding insured entities.",
+        "normalized_query": "show me the names of brokers who have handled policies with early claim investigation fees and the corresponding insured entities",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter for policies that have early claim investigation fees.",
+                "hints": {
+                    "tables": [
+                        "FEE",
+                        "PLC"
+                    ],
+                    "columns": [
+                        "FEE_TYPE",
+                        "PLC_ID"
+                    ],
+                    "joins": [
+                        "FEE.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Join to obtain details about brokers handling the filtered policies.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "BRKR"
+                    ],
+                    "columns": [
+                        "BRKR.BRKR_NM",
+                        "PLC.INS_ID"
+                    ],
+                    "joins": [
+                        "PLC.BRKR_ID-JOINS-BRKR.BRKR_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Join to fetch details of insured entities related to the filtered policies.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "INS"
+                    ],
+                    "columns": [
+                        "INS.INS_NM"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "List all policies with a renewal date in the next three months that have surcharges due to late payments.",
+        "normalized_query": "list all policies with a renewal date in the next three months that have surcharges due to late payments",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter policies based on renewal date within the next three months.",
+                "hints": {
+                    "tables": [
+                        "PLC"
+                    ],
+                    "columns": [
+                        "PLC_RENEW",
+                        "PLC_STAT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Join the filtered policies with surcharges where the surcharge type is a late payment.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "SUR"
+                    ],
+                    "columns": [
+                        "PLC_ID",
+                        "SUR_TYPE"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID-JOINS-SUR.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Give me the total number of claims closed by high-value adjusters in the last six months, broken down by loss type.",
+        "normalized_query": "total number of claims closed by high-value adjusters in the last six months broken down by loss type",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter claims based on the closed status and date range of the last six months.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM_STAT",
+                        "CLM_CLOSE",
+                        "CLM_DT"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Group the filtered claims by loss type and count them.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "LOSS_TYPE"
+                    ],
+                    "joins": []
+                }
+            },
+            {
+                "step_id": "STEP3",
+                "description": "Further filter the results to include only claims handled by high-value adjusters.",
+                "hints": {
+                    "tables": [
+                        "CLM",
+                        "ADJ"
+                    ],
+                    "columns": [
+                        "ADJ_ID",
+                        "ADJ_SPCL"
+                    ],
+                    "joins": [
+                        "CLM.ADJ_ID-JOINS-ADJ.ADJ_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Find the names of all insured entities that have policies with both fire and theft coverage and have filed claims in the last two years.",
+        "normalized_query": "Find the names of all insured entities that have policies with coverage types fire and theft and that have filed claims in the last two years.",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Extract the names of insured entities (clients) who have active policies with both fire and theft coverage types.",
+                "hints": {
+                    "tables": [
+                        "INS",
+                        "PLC",
+                        "PLC_COV",
+                        "COV"
+                    ],
+                    "columns": [
+                        "INS.INS_NM",
+                        "PLC.PLC_ID",
+                        "COV.C2"
+                    ],
+                    "joins": [
+                        "PLC.INS_ID-JOINS-INS.INS_ID",
+                        "PLC_COV.PLC_ID-JOINS-PLC.PLC_ID",
+                        "PLC_COV.COV_ID-JOINS-COV.C1"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Filter insured entities based on claims filed in the last two years.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM.CLM_DT"
+                    ],
+                    "joins": [
+                        "CLM.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "Show me the policies that have multi policy discounts, and calculate the total premium difference before and after the discount.",
+        "normalized_query": "show me the policies that have multi-policy discounts and calculate the total premium difference before and after the discount",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Filter policies that are associated with multi-policy discounts.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "DISC"
+                    ],
+                    "columns": [
+                        "PLC.PLC_ID",
+                        "DISC.DISC_TYPE"
+                    ],
+                    "joins": [
+                        "DISCOUNT.PLC_ID-JOINS-PLC.PLC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Calculate the total premium difference before and after applying the discount.",
+                "hints": {
+                    "tables": [
+                        "PLC",
+                        "DISC"
+                    ],
+                    "columns": [
+                        "PLC.PLC_PREM",
+                        "DISC.DISC_AMT"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID-JOINS-DISC.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    },
+    {
+        "user_query": "What are the names of all the insurance brokers, that have written policies for hospitals in the state of texas, that have had a claim for water damage in the last 12 months?",
+        "normalized_query": "Select brkr.brkr_nm from brkr join plc on brkr.brkr_id = plc.brkr_id join clm on plc.plc_id = clm.plc_id where loc.loc_state = 'tx' and loc.loc_btype = 'hospital' and clm.clm_dt >= date_sub(curdate(), interval 12 month;",
+        "decomposed_query": [
+            {
+                "step_id": "STEP1",
+                "description": "Identify insurance brokers who have written policies for hospitals located in Texas.",
+                "hints": {
+                    "tables": [
+                        "BRKR",
+                        "PLC",
+                        "LOC"
+                    ],
+                    "columns": [
+                        "BRKR.BRKR_NM",
+                        "PLC.PLC_ID",
+                        "LOC.LOC_STATE",
+                        "LOC.LOC_BTYPE"
+                    ],
+                    "joins": [
+                        "BRKR.BRKR_ID = PLC.BRKR_ID",
+                        "PLC.INS_LOC = LOC.LOC_ID"
+                    ]
+                }
+            },
+            {
+                "step_id": "STEP2",
+                "description": "Filter those brokers based on whether the policy has had a claim for water damage in the last 12 months.",
+                "hints": {
+                    "tables": [
+                        "CLM"
+                    ],
+                    "columns": [
+                        "CLM.CLM_DT"
+                    ],
+                    "joins": [
+                        "PLC.PLC_ID = CLM.PLC_ID"
+                    ]
+                }
+            }
+        ]
+    }
+]

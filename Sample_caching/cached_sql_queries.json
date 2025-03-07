@@ -1,0 +1,392 @@
+
+[{
+    "user_query": "Give me the total number of claims closed by high-value adjusters in the last six months, broken down by loss type.",
+    "sql_query": """
+        SELECT
+            CLM.LOSS_TYPE,
+            COUNT(CLM.CLM_ID) AS ClaimCount
+        FROM
+            CLM
+        JOIN
+            ADJ ON CLM.ADJ_ID = ADJ.ADJ_ID
+        WHERE
+            CLM.CLM_STAT = 'Closed'
+            AND CLM.CLM_CLOSE >= DATE('now', '-6 months')
+            AND ADJ.ADJ_SPCL = 'HighValue'
+        GROUP BY
+            CLM.LOSS_TYPE;
+    """
+},
+{
+    "user_query": "List all policies with a renewal date in the next three months that have surcharges due to late payments.",
+    "sql_query": """
+        SELECT
+            PLC.PLC_ID
+        FROM PLC
+        JOIN SUR
+            ON PLC.PLC_ID = SUR.PLC_ID
+        WHERE
+            PLC.PLC_RENEW BETWEEN DATE('now') AND DATE('now', '+3 months')
+            AND SUR.SUR_TYPE = 'Late Payment';
+    """
+},
+{
+    "user_query": "Show me the names of brokers who have handled policies with early claim investigation fees and the corresponding insured entities.",
+    "sql_query": """
+        SELECT DISTINCT BRKR.BRKR_NM AS BrokerName,
+   INS.INS_NM AS InsuredName,
+   PLC.PLC_NUM AS PolicyNumber
+FROM FEE
+JOIN PLC ON FEE.PLC_ID = PLC.PLC_ID
+JOIN BRKR ON PLC.BRKR_ID = BRKR.BRKR_ID
+JOIN INS ON PLC.INS_ID = INS.INS_ID
+WHERE FEE.FEE_TYPE = 'Early Claim Investigation'
+ORDER BY BRKR.BRKR_NM;
+    """
+},
+{
+    "user_query": "Show me the policies that have multi-policy discounts, and calculate the total premium difference before and after the discount.",
+    "sql_query": """
+        SELECT PLC.PLC_NUM AS PolicyNumber,
+   PLC.PLC_PREM AS GrossPremium,
+   DISC.DISC_AMT AS DiscountAmount,
+   (PLC.PLC_PREM - DISC.DISC_AMT) AS NetPremium,
+   (DISC.DISC_AMT / PLC.PLC_PREM) * 100 AS DiscountPercentage
+FROM PLC
+JOIN DISC ON PLC.PLC_ID = DISC.PLC_ID
+WHERE DISC.DISC_TYPE = 'Multi-Policy'
+ORDER BY DiscountAmount DESC;
+    """
+},
+{
+    "user_query": "What are the names of all the insurance brokers that have written policies for hospitals in the state of Texas, that have had a claim for water damage in the last 12 months?",
+    "sql_query": """
+        SELECT DISTINCT BRKR.BRKR_NM AS BrokerName
+FROM BRKR
+JOIN PLC ON BRKR.BRKR_ID = PLC.BRKR_ID
+JOIN INS ON PLC.INS_ID = INS.INS_ID
+JOIN LOC ON INS.INS_LOC = LOC.LOC_ID
+JOIN CLM ON PLC.PLC_ID = CLM.PLC_ID
+WHERE LOC.LOC_STATE = 'TX'
+AND LOC.LOC_BTYPE = 'Hospital'
+AND CLM.LOSS_TYPE = 'Water Damage'
+AND CLM.CLM_DT >= date('now', '-12 months')
+ORDER BY BRKR.BRKR_NM;
+    """
+},
+{
+    "user_query": "Find the average claim amount for policies issued to companies in the manufacturing industry with building types classified as warehouses.",
+    "sql_query": """
+        SELECT AVG(CLM.CLM_AMT)
+        FROM PLC
+        JOIN INS ON PLC.INS_ID = INS.INS_ID
+        JOIN LOC ON INS.INS_LOC = LOC.LOC_ID
+        JOIN CLM ON PLC.PLC_ID = CLM.PLC_ID
+        WHERE INS.INS_INDC = 'Manufacturing'
+          AND LOC.LOC_BTYPE = 'Warehouse';
+    """
+},
+{
+    "user_query": "Give me the names of all insured entities in California that have filed claims for water damage in the last year.",
+    "sql_query": """
+        SELECT DISTINCT INS.INS_NM AS InsuredName
+FROM INS
+JOIN LOC ON INS.INS_LOC = LOC.LOC_ID
+JOIN PLC ON INS.INS_ID = PLC.INS_ID
+JOIN CLM ON PLC.PLC_ID = CLM.PLC_ID
+WHERE LOC.LOC_STATE = 'CA'
+AND CLM.LOSS_TYPE = 'Water Damage'
+AND CLM.CLM_DT >= date('now', '-1 year')
+ORDER BY INS.INS_NM;
+    """
+},
+{
+    "user_query": "List all policies with a coverage limit greater than $1 million that have received a loyalty discount and have fire protection systems.",
+    "sql_query": """
+        SELECT DISTINCT
+            PLC.PLC_ID
+        FROM
+            PLC
+        JOIN
+            PLC_COV ON PLC.PLC_ID = PLC_COV.PLC_ID
+        JOIN
+            DISC ON PLC.PLC_ID = DISC.PLC_ID
+        JOIN
+            INS ON PLC.INS_ID = INS.INS_ID
+        JOIN
+            LOC ON INS.INS_LOC = LOC.LOC_ID
+        WHERE
+            PLC_COV.PLC_COVLMT > 1000000
+            AND DISC.DISC_TYPE = 'Loyalty'
+            AND LOC.LOC_FIRE = 'Y';
+    """
+},
+{
+    "user_query": "Show me the total premium collected for policies handled by brokers specializing in financial insurance in the Northeast region.",
+    "sql_query": """
+        SELECT SUM(PLC.PLC_PREM) AS TotalPremium,
+   COUNT(*) AS PolicyCount,
+   AVG(PLC.PLC_PREM) AS AveragePremium
+FROM PLC
+JOIN BRKR ON PLC.BRKR_ID = BRKR.BRKR_ID
+WHERE BRKR.BRKR_SPCL = 'Financial'
+AND BRKR.BRKR_RG = 'Northeast';
+    """
+},
+{
+    "user_query": "Where can I find the underwriting notes for a specific policy, and what information do they typically contain?",
+    "sql_query": """
+        SELECT
+            PLC_UNDNT
+        FROM
+            PLC
+        WHERE
+            PLC_ID = 'specific_policy_id'; -- Replace 'specific_policy_id' with the actual policy ID
+    """
+},
+{
+    "user_query": "How do I determine the adjuster assigned to a claim based on the claim number and find their contact information?",
+    "sql_query": """
+        SELECT
+            ADJ.ADJ_ID,
+            ADJ.ADJ_CONTACT
+        FROM
+            CLM
+        JOIN
+            ADJ ON CLM.ADJ_ID = ADJ.ADJ_ID
+    """
+},
+{
+    "user_query": "How do I find the industry classification of an insured entity based on their policy number?",
+    "sql_query": """
+        SELECT
+            INS.INS_INDC
+        FROM
+            PLC
+        JOIN
+            INS ON PLC.INS_ID = INS.INS_ID
+    """
+},
+{
+    "user_query": "How do I map a claim number to the corresponding policy number and the insured entity's name?",
+    "sql_query": """
+        SELECT
+            CLM.CLM_NUM,
+            PLC.PLC_NUM,
+            INS.INS_NM
+        FROM
+            CLM
+        JOIN
+            PLC ON CLM.PLC_ID = PLC.PLC_ID
+        JOIN
+            INS ON PLC.INS_ID = INS.INS_ID;
+    """
+},
+{
+    "user_query": "What are the different types of fees that can be associated with a policy, and how do I determine the total fee amount?",
+    "sql_query": """
+        SELECT DISTINCT
+            FEE_TYPE
+        FROM
+            FEE;
+
+        SELECT
+            FEE.PLC_ID,
+            SUM(FEE_AMT) AS Total_Fee_Amount
+        FROM
+            FEE
+        JOIN
+            PLC ON FEE.PLC_ID = PLC.PLC_ID
+        GROUP BY
+            FEE.PLC_ID;
+    """
+},
+{
+    "user_query": "Where can I locate the details of discounts applied to a policy, and how do I calculate the net premium after discounts?",
+    "sql_query": """
+        SELECT
+            PLC.PLC_NUM,
+            DISC.DISC_TYPE,
+            DISC.DISC_AMT,
+            PLC.PLC_PREM,
+            (PLC.PLC_PREM - SUM(DISC.DISC_AMT)) AS NET_PREMIUM
+        FROM
+            PLC
+        JOIN
+            DISC ON PLC.PLC_ID = DISC.PLC_ID
+        GROUP BY
+            PLC.PLC_NUM,
+            DISC.DISC_TYPE,
+            DISC.DISC_AMT,
+            PLC.PLC_PREM;
+    """
+},
+{
+    "user_query": "Can you show me the distribution of policy statuses and how they relate to the policy renewal dates?",
+    "sql_query": """
+        SELECT
+            PLC_STAT,
+            COUNT(*) AS PolicyCount,
+            AVG(CASE WHEN PLC_RENEW <= CURRENT_DATE THEN 1 ELSE 0 END) AS RenewalRate
+        FROM
+            PLC
+        GROUP BY
+            PLC_STAT
+        ORDER BY
+            PLC_STAT;
+    """
+},
+{
+    "user_query": "What is the average claim amount for each loss type, and how does it compare to the average coverage limit for those policies?",
+    "sql_query": """
+        SELECT 
+LOC.LOC_SEC AS SecuritySystem,
+LOC.LOC_FIRE AS FireProtection,
+CLM.LOSS_TYPE AS LossType,
+COUNT(*) AS ClaimCount,
+AVG(CLM.CLM_AMT) AS AverageClaimAmount
+FROM LOC
+JOIN INS ON LOC.LOC_ID = INS.INS_LOC
+JOIN PLC ON INS.INS_ID = PLC.INS_ID
+JOIN CLM ON PLC.PLC_ID = CLM.PLC_ID
+GROUP BY LOC.LOC_SEC, LOC.LOC_FIRE, CLM.LOSS_TYPE
+ORDER BY ClaimCount DESC;
+    """
+},
+{
+    "user_query": "How do the security and fire protection systems of insured properties affect the claim loss types and amounts?",
+    "sql_query": """
+        SELECT
+LOC.LOC_SEC,
+LOC.LOC_FIRE,
+CLM.LOSS_TYPE,
+CLM.CLM_AMT
+FROM
+LOC
+JOIN
+INS ON LOC.LOC_ID = INS.INS_LOC
+JOIN
+PLC ON INS.INS_ID = PLC.INS_ID
+JOIN
+CLM ON PLC.PLC_ID = CLM.PLC_ID;
+    """
+},
+{
+    "user_query": "Show me the relationship between the specialization of brokers and the insurance divisions they handle.",
+    "sql_query": """
+        SELECT
+            BRKR.BRKR_SPCL,
+            PLC.PLC_DIV
+        FROM
+            BRKR
+        JOIN
+            PLC ON BRKR.BRKR_ID = PLC.BRKR_ID;
+    """
+},
+{
+    "user_query": "What are the most frequent discount types applied to policies, and how do they affect the final premium?",
+    "sql_query": """
+        SELECT
+            D.DISC_TYPE,
+            COUNT(D.DISC_TYPE) AS DiscountFrequency,
+            AVG(P.PLC_PREM) AS AveragePremium
+        FROM
+            DISC D
+        JOIN
+            PLC P ON D.PLC_ID = P.PLC_ID
+        GROUP BY
+            D.DISC_TYPE
+        ORDER BY
+            DiscountFrequency DESC;
+    """
+},
+{
+    "user_query": "I want to see how the construction year of a building impacts the premium amount of the associated policies.",
+    "sql_query": """
+        SELECT
+        LOC.LOC_CY,
+        AVG(PLC.PLC_PREM) AS AveragePremium
+    FROM
+        LOC
+    JOIN
+        INS ON LOC.LOC_ID = INS.INS_LOC
+    JOIN
+        PLC ON INS.INS_ID = PLC.INS_ID
+    GROUP BY
+        LOC.LOC_CY
+    ORDER BY
+        LOC.LOC_CY;
+    """
+},
+{
+    "user_query": "What are the common loss types for claims and how do they relate to the building types of the insured properties?",
+    "sql_query": """
+    SELECT CLM.LOSS_TYPE, LOC.LOC_BTYPE, 
+   COUNT(*) AS ClaimCount,
+   AVG(CLM.CLM_AMT) AS AverageClaimAmount
+FROM CLM
+JOIN PLC ON CLM.PLC_ID = PLC.PLC_ID
+JOIN INS ON PLC.INS_ID = INS.INS_ID
+JOIN LOC ON INS.INS_LOC = LOC.LOC_ID
+GROUP BY CLM.LOSS_TYPE, LOC.LOC_BTYPE
+ORDER BY ClaimCount DESC;
+
+    """
+},
+{
+    "user_query": "Show me the distribution of policy coverage limits across different geographical regions where our brokers operate.",
+    "sql_query": """
+        SELECT
+BRKR.BRKR_RG,
+PLC_COV.PLC_COVLMT,
+COUNT(*) AS PolicyCount
+FROM
+PLC
+JOIN
+BRKR ON PLC.BRKR_ID = BRKR.BRKR_ID
+JOIN
+PLC_COV ON PLC.PLC_ID = PLC_COV.PLC_ID
+GROUP BY
+BRKR.BRKR_RG,
+PLC_COV.PLC_COVLMT
+ORDER BY
+BRKR.BRKR_RG,
+PLC_COV.PLC_COVLMT;
+    """
+},
+{
+    "user_query": "Tell me all the different types of building classifications we insure and how many policies are associated with each type.",
+    "sql_query": """
+        SELECT
+        LOC.LOC_BTYPE,
+        COUNT(DISTINCT PLC.PLC_ID) AS PolicyCount
+    FROM
+        LOC
+    JOIN
+        INS ON LOC.LOC_ID = INS.INS_LOC
+    JOIN
+        PLC ON INS.INS_ID = PLC.INS_ID
+    GROUP BY
+        LOC.LOC_BTYPE;
+    """
+},
+{
+    "user_query": "What are the various industry classifications of our insured entities and how do they correlate with the insurance divisions?",
+    "sql_query": """
+        SELECT
+INS.INS_INDC,
+PLC.PLC_DIV,
+COUNT(*) AS PolicyCount
+FROM
+INS
+INNER JOIN
+PLC ON INS.INS_ID = PLC.INS_ID
+GROUP BY
+INS.INS_INDC,
+PLC.PLC_DIV
+ORDER BY
+INS.INS_INDC,
+PLC.PLC_DIV;
+    """
+}
+]

@@ -1,0 +1,547 @@
+- table_name: BRKR
+  description: The Broker table stores information about insurance brokers who facilitate commercial property insurance policies. It contains broker demographics, contact details, specializations, and licensing information. The table tracks both individual brokers and their affiliated firms, with regional assignments and specialization areas.
+  keys: Primary Key - BRKR_ID, Foreign Key relationship exists with PLC.BRKR_ID
+  synonyms: Agent, Producer, Insurance Representative, Intermediary
+  join_conditions: BRKR.BRKR_ID-JOINS-PLC.BRKR_ID
+  columns:
+    - column_name: BRKR_ID
+      description: Unique identifier for each broker
+      data_type: numerical
+      potential_correlations: [PLC.BRKR_ID]
+      inferred_business_rules: [Must be unique, Must be positive integer]
+
+    - column_name: BRKR_NM
+      description: Full name of the broker
+      data_type: text
+      potential_correlations: [PLC.BRKR_ID]
+      inferred_business_rules: [Cannot be null, Must contain at least first and last name]
+
+    - column_name: BRKR_FIRM
+      description: Name of the brokerage firm where the broker works
+      data_type: text
+      potential_correlations: [PLC.BRKR_ID]
+      inferred_business_rules: [Must be a registered business entity]
+
+    - column_name: BRKR_CONTACT
+      description: Phone number for contacting the broker
+      data_type: numerical
+      potential_correlations: [INS.INS_PHONE]
+      inferred_business_rules: [Must be valid phone number format, Must be unique]
+
+    - column_name: BRKR_RG
+      description: Geographic region where the broker operates
+      data_type: categorical(Northeast, West, Midwest, South)
+      potential_correlations: [LOC.LOC_STATE]
+      inferred_business_rules: [Must be one of defined regions]
+
+    - column_name: BRKR_EMAIL
+      description: Email address for the broker
+      data_type: text
+      potential_correlations: []
+      inferred_business_rules: [Must be valid email format, Must be unique]
+
+    - column_name: BRKR_LIC
+      description: Broker's license number
+      data_type: numerical
+      potential_correlations: []
+      inferred_business_rules: [Must be valid license number format, Must be unique]
+
+    - column_name: BRKR_DT
+      description: Date when broker was registered or licensed
+      data_type: date
+      potential_correlations: [PLC.PLC_EFF]
+      inferred_business_rules: [Must be valid date, Cannot be future date]
+
+    - column_name: BRKR_SPCL
+      description: Broker's area of specialization in insurance
+      data_type: categorical(Health, Life, Casualty, Auto, Property)
+      potential_correlations: [PLC.PLC_DIV, COV.COV_TYPE]
+      inferred_business_rules: [Must match valid specialization categories]
+- table_name: COV
+  description: Master table containing coverage types and their descriptions for commercial property insurance policies. It defines the fundamental insurance protections available to policyholders, including life, property damage, theft, fire, and auto coverage options.
+  keys: Primary Key - C1 (COV_ID), Referenced as Foreign Key in PLC_COV table
+  synonyms: Insurance Coverage, Policy Coverage, Protection Types, Insurance Products
+  join_conditions: COV.C1-JOINS-PLC_COV.COV_ID-JOINS-PLC.PLC_ID
+  columns:
+    - column_name: C1
+      description: Unique identifier for each coverage type, serves as the primary key
+      data_type: numerical
+      potential_correlations: [PLC_COV.COV_ID, PLC.PLC_DIV]
+      inferred_business_rules: [Must be unique, Must be positive integer]
+
+    - column_name: C2
+      description: Name/type of the insurance coverage offered
+      data_type: categorical(Life Insurance, Water Damage, Theft, Fire, Auto)
+      potential_correlations: [PLC.PLC_DIV, CLM.LOSS_TYPE]
+      inferred_business_rules: [Must be one of defined coverage types, Must align with policy division types]
+
+    - column_name: C3
+      description: Detailed description of what the coverage includes
+      data_type: text
+      potential_correlations: [CLM.LOSS_DESC]
+      inferred_business_rules: [Must not be null, Must provide meaningful description of coverage]
+- table_name: DISC
+  description: The Discount table stores information about various types of discounts applied to insurance policies. It captures discount amounts, types, and descriptions for different policies. The table helps track premium reductions offered to policyholders based on various criteria like loyalty, multi-policy holdings, and risk acceptance.
+  keys: Primary Key - DISC_ID, Foreign Key - PLC_ID references PLC.PLC_ID
+  synonyms: Deductions, Premium Reductions, Policy Credits, Rate Reductions
+  join_conditions: DISC.PLC_ID-JOINS-PLC.PLC_ID
+  columns:
+   - column_name: DISC_ID
+     description: Unique identifier for each discount record
+     data_type: numerical
+     potential_correlations: []
+     inferred_business_rules: [Must be unique, Must be positive integer]
+
+   - column_name: PLC_ID
+     description: Reference to the policy to which the discount is applied
+     data_type: numerical
+     potential_correlations: [PLC.PLC_ID, PLC.PLC_PREM, PLC.PLC_COVLMT]
+     inferred_business_rules: [Must exist in PLC table, Must be valid active policy]
+
+   - column_name: DISC_TYPE
+     description: Category or type of discount applied to the policy
+     data_type: categorical(Loyalty, Multi-Policy, High Risk Acceptance)
+     potential_correlations: [PLC.PLC_STAT, PLC.PLC_DIV]
+     inferred_business_rules: [Must be one of defined discount types, Cannot have multiple same type discounts for same policy]
+
+   - column_name: DISC_AMT
+     description: Monetary value of the discount applied
+     data_type: numerical
+     potential_correlations: [PLC.PLC_PREM, PLC.PLC_COVLMT]
+     inferred_business_rules: [Must be positive amount, Cannot exceed policy premium, Must be less than 50% of premium]
+
+   - column_name: DISC_DESC
+     description: Textual description explaining the discount
+     data_type: text
+     potential_correlations: [DISC_TYPE]
+     inferred_business_rules: [Must not be empty, Must contain meaningful description]
+- table_name: FEE
+  description: Stores various fees associated with commercial property insurance policies, including policy fees, broker fees, and early claim investigation fees. The table tracks fee amounts, types, and descriptions for each policy.
+  keys: Primary Key - FEE_ID, Foreign Key - PLC_ID references PLC.PLC_ID
+  synonyms: charges, costs, surcharges, assessments
+  join_conditions: FEE.PLC_ID-JOINS-PLC.PLC_ID, PLC.INS_ID-JOINS-INS.INS_ID, PLC.BRKR_ID-JOINS-BRKR.BRKR_ID
+  columns:
+   - column_name: FEE_ID
+     description: Unique identifier for each fee record
+     data_type: numerical
+     potential_correlations: []
+     inferred_business_rules: [FEE_ID must be unique, FEE_ID > 0]
+
+   - column_name: PLC_ID
+     description: Reference to the policy associated with the fee
+     data_type: numerical
+     potential_correlations: [PLC.PLC_ID, PLC.PLC_PREM, PLC.PLC_COVLMT]
+     inferred_business_rules: [PLC_ID must exist in PLC table, PLC_ID > 0]
+
+   - column_name: FEE_TYPE
+     description: Category or classification of the fee
+     data_type: categorical(Policy Fee, Broker Fee, Early Claim Investigation)
+     potential_correlations: [PLC.PLC_DIV, PLC.PLC_PROG, BRKR.BRKR_SPCL]
+     inferred_business_rules: [FEE_TYPE must be one of the defined categories]
+
+   - column_name: FEE_AMT
+     description: Monetary amount of the fee
+     data_type: numerical
+     potential_correlations: [PLC.PLC_PREM, PLC.PLC_COVLMT, DISC.DISC_AMT, SUR.SUR_AMT]
+     inferred_business_rules: [FEE_AMT >= 0, FEE_AMT < PLC_COVLMT]
+
+   - column_name: FEE_DESC
+     description: Textual description of the fee purpose
+     data_type: text
+     potential_correlations: [FEE_TYPE]
+     inferred_business_rules: [FEE_DESC must not be empty, FEE_DESC must contain "Fee for" prefix]
+- table_name: INS
+  description: The Insured (INS) table stores information about commercial property insurance clients/policyholders, including their business details, contact information, revenue, and industry classification. This table represents the core entity in the insurance system that holds policies and generates revenue through premiums.
+  keys: Primary Key - INS_ID, Foreign Keys - INS_LOC references LOC.LOC_ID
+  synonyms: Insured, Policyholder, Client, Customer, Assured
+  join_conditions: INS.INS_ID-JOINS-PLC.INS_ID, INS.INS_LOC-JOINS-LOC.LOC_ID
+  columns:
+   - column_name: INS_ID
+     description: Unique identifier for each insured entity
+     data_type: numerical
+     potential_correlations: [PLC.INS_ID]
+     inferred_business_rules: [Must be unique, Must be positive integer]
+   
+   - column_name: INS_NM
+     description: Legal name of the insured business entity
+     data_type: text
+     potential_correlations: [PLC.PLC_NUM]
+     inferred_business_rules: [Cannot be null, Must be unique within active policies]
+   
+   - column_name: INS_TYPE
+     description: Business structure/type of the insured entity
+     data_type: categorical(Company, Partnership, Individual)
+     potential_correlations: [PLC.PLC_DIV, INS_INDC]
+     inferred_business_rules: [Must be one of predefined categories]
+   
+   - column_name: INS_LOC
+     description: Reference to primary location ID of the insured
+     data_type: numerical
+     potential_correlations: [LOC.LOC_ID, LOC.LOC_STATE]
+     inferred_business_rules: [Must exist in LOC table]
+   
+   - column_name: INS_CONTACT
+     description: Primary contact person name for the insured entity
+     data_type: text
+     potential_correlations: [INS_PHONE]
+     inferred_business_rules: [Cannot be null]
+   
+   - column_name: INS_PHONE
+     description: Contact phone number for the insured entity
+     data_type: numerical
+     potential_correlations: [INS_CONTACT]
+     inferred_business_rules: [Must be valid phone number format]
+   
+   - column_name: INS_DESC
+     description: Business description or additional notes about the insured
+     data_type: text
+     potential_correlations: [INS_TYPE, INS_INDC]
+     inferred_business_rules: [Optional field]
+   
+   - column_name: INS_INDC
+     description: Industry classification code for the insured business
+     data_type: categorical(FIN, HEA, MFG, AGR, AUTO)
+     potential_correlations: [INS_TYPE, PLC.PLC_DIV]
+     inferred_business_rules: [Must be valid industry code]
+   
+   - column_name: INS_REV
+     description: Annual revenue of the insured business
+     data_type: numerical
+     potential_correlations: [PLC.PLC_PREM, PLC.PLC_COVLMT]
+     inferred_business_rules: [Must be positive, Used in premium calculations]
+- table_name: LOC
+  description: The Location table stores detailed information about insured properties including physical addresses, building characteristics, safety features, and risk factors. It captures key property attributes that influence insurance underwriting decisions and premium calculations.
+  keys: Primary Key - LOC_ID, Referenced by INS.INS_LOC as Foreign Key
+  synonyms: Property Location, Risk Location, Insured Premises, Building Details
+  join_conditions: LOC.LOC_ID-JOINS-INS.INS_LOC
+  columns:
+    - column_name: LOC_ID
+      description: Unique identifier for each insured location/property
+      data_type: numerical
+      potential_correlations: [INS.INS_LOC]
+      inferred_business_rules: [Must be unique, Must be > 0]
+
+    - column_name: LOC_ADDR
+      description: Street address of the insured property
+      data_type: text
+      potential_correlations: [INS.INS_DESC]
+      inferred_business_rules: [Cannot be null, Must be valid address format]
+
+    - column_name: LOC_CITY
+      description: City where the insured property is located
+      data_type: text
+      potential_correlations: [LOC_STATE, LOC_ZIP]
+      inferred_business_rules: [Cannot be null, Must be valid city name]
+
+    - column_name: LOC_STATE
+      description: US state where the property is located
+      data_type: categorical(TX, IL, NY, CA, MD)
+      potential_correlations: [LOC_ZIP, PLC.PLC_PREM]
+      inferred_business_rules: [Must be valid US state code]
+
+    - column_name: LOC_ZIP
+      description: ZIP code of the property location
+      data_type: numerical
+      potential_correlations: [LOC_STATE, LOC_CITY]
+      inferred_business_rules: [Must be valid 5-digit US ZIP code]
+
+    - column_name: LOC_BTYPE
+      description: Type/category of building or property
+      data_type: categorical(Office, Hospital, Retail, Warehouse)
+      potential_correlations: [PLC.PLC_DIV, PLC.PLC_PREM]
+      inferred_business_rules: [Must be from predefined building type categories]
+
+    - column_name: LOC_SQFT
+      description: Total square footage of the property
+      data_type: numerical
+      potential_correlations: [PLC.PLC_COVLMT, PLC.PLC_PREM]
+      inferred_business_rules: [Must be > 0, Should align with building type]
+
+    - column_name: LOC_CY
+      description: Construction year of the building
+      data_type: numerical
+      potential_correlations: [PLC.PLC_PREM, LOC_FIRE]
+      inferred_business_rules: [Must be >= 1900, Cannot be future year]
+
+    - column_name: LOC_FIRE
+      description: Indicates presence of fire protection systems (0=No, 1=Yes)
+      data_type: categorical(0, 1)
+      potential_correlations: [PLC.PLC_PREM, LOC_SEC]
+      inferred_business_rules: [Must be 0 or 1]
+
+    - column_name: LOC_SEC
+      description: Indicates presence of security systems (0=No, 1=Yes)
+      data_type: categorical(0, 1)
+      potential_correlations: [PLC.PLC_PREM, LOC_FIRE]
+      inferred_business_rules: [Must be 0 or 1]
+- table_name: PLC
+  description: The Policy (PLC) table is the central table in the commercial property insurance database that stores core policy information including policy numbers, coverage details, premiums, effective/expiration dates, and status. It maintains relationships with insureds, brokers, and various policy-related transactions.
+  keys: Primary Key - PLC_ID, Foreign Keys - INS_ID references INS.INS_ID, BRKR_ID references BRKR.BRKR_ID
+  synonyms: Policy, Insurance Policy, Contract, Insurance Contract
+  join_conditions: PLC.PLC_ID-JOINS-CLM.PLC_ID, PLC.PLC_ID-JOINS-DISC.PLC_ID, PLC.PLC_ID-JOINS-FEE.PLC_ID, PLC.PLC_ID-JOINS-SUR.PLC_ID, PLC.PLC_ID-JOINS-PLC_COV.PLC_ID, PLC.INS_ID-JOINS-INS.INS_ID, PLC.BRKR_ID-JOINS-BRKR.BRKR_ID
+  columns:
+   - column_name: PLC_ID
+     description: Unique identifier for each policy
+     data_type: numerical
+     potential_correlations: [CLM.PLC_ID, DISC.PLC_ID, FEE.PLC_ID, SUR.PLC_ID, PLC_COV.PLC_ID]
+     inferred_business_rules: [Must be unique, Must be positive integer]
+
+   - column_name: PLC_NUM
+     description: Policy number used for business reference
+     data_type: text
+     potential_correlations: []
+     inferred_business_rules: [Must follow format POL-XXXX, Must be unique]
+
+   - column_name: INS_ID
+     description: Reference to the insured entity
+     data_type: numerical
+     potential_correlations: [INS.INS_ID, INS.INS_TYPE, INS.INS_INDC]
+     inferred_business_rules: [Must exist in INS table]
+
+   - column_name: BRKR_ID
+     description: Reference to the broker handling the policy
+     data_type: numerical
+     potential_correlations: [BRKR.BRKR_ID, BRKR.BRKR_SPCL]
+     inferred_business_rules: [Must exist in BRKR table]
+
+   - column_name: PLC_STAT
+     description: Current status of the policy
+     data_type: categorical(Active, Expired, Cancelled)
+     potential_correlations: [PLC_EXP, PLC_RENEW]
+     inferred_business_rules: [Must be one of defined statuses]
+
+   - column_name: PLC_PROG
+     description: Insurance program type
+     data_type: categorical(Standard, Holiday, Covid)
+     potential_correlations: [PLC_DIV, PLC_ISSUE]
+     inferred_business_rules: [Must be one of defined programs]
+
+   - column_name: PLC_EFF
+     description: Policy effective date
+     data_type: date
+     potential_correlations: [PLC_EXP, PLC_RENEW, CLM.CLM_DT]
+     inferred_business_rules: [Must be before PLC_EXP, Must be valid date]
+
+   - column_name: PLC_EXP
+     description: Policy expiration date
+     data_type: date
+     potential_correlations: [PLC_EFF, PLC_RENEW, PLC_STAT]
+     inferred_business_rules: [Must be after PLC_EFF, Must be valid date]
+
+   - column_name: PLC_RENEW
+     description: Policy renewal date
+     data_type: date
+     potential_correlations: [PLC_EXP, PLC_STAT]
+     inferred_business_rules: [Must be after PLC_EFF, Must be before or equal to PLC_EXP]
+
+   - column_name: PLC_SRC
+     description: Source of the policy
+     data_type: categorical(Agent, Online, ThirdParty)
+     potential_correlations: [BRKR.BRKR_ID]
+     inferred_business_rules: [Must be one of defined sources]
+
+   - column_name: PLC_COVLMT
+     description: Policy coverage limit amount
+     data_type: numerical
+     potential_correlations: [PLC_PREM, CLM.CLM_AMT]
+     inferred_business_rules: [Must be positive number, Must be greater than PLC_PREM]
+
+   - column_name: PLC_PREM
+     description: Policy premium amount
+     data_type: numerical
+     potential_correlations: [PLC_COVLMT, DISC.DISC_AMT, FEE.FEE_AMT]
+     inferred_business_rules: [Must be positive number, Must be less than PLC_COVLMT]
+
+   - column_name: PLC_DIV
+     description: Policy division or line of business
+     data_type: categorical(Life, Health, Property, Auto, Financial)
+     potential_correlations: [PLC_PROG, INS.INS_INDC]
+     inferred_business_rules: [Must be one of defined divisions]
+
+   - column_name: PLC_ISSUE
+     description: Policy issuing entity
+     data_type: categorical(AIC, ASIC)
+     potential_correlations: [PLC_PROG, PLC_DIV]
+     inferred_business_rules: [Must be one of defined issuers]
+
+   - column_name: PLC_UNDNT
+     description: Underwriting notes
+     data_type: text
+     potential_correlations: []
+     inferred_business_rules: [Cannot be empty]
+- table_name: PLC_COV
+  description: This table represents the relationship between insurance policies and their associated coverages, tracking specific coverage details including effective dates, expiration dates, and coverage limits for each policy-coverage combination. It serves as a junction table that maintains the many-to-many relationship between policies and coverages while storing coverage-specific attributes.
+  keys: Primary Key - PLC_COV_ID, Foreign Keys - PLC_ID references PLC.PLC_ID, COV_ID references COV.C1
+  synonyms: Policy Coverages, Coverage Details, Policy Coverage Association
+  join_conditions: PLC_COV.PLC_ID-JOINS-PLC.PLC_ID, PLC_COV.COV_ID-JOINS-COV.C1
+  columns:
+    - column_name: PLC_COV_ID
+      description: Unique identifier for each policy coverage record
+      data_type: numerical
+      potential_correlations: []
+      inferred_business_rules: [Must be unique, Must be positive integer]
+
+    - column_name: PLC_ID
+      description: Reference to the policy this coverage is associated with
+      data_type: numerical
+      potential_correlations: [PLC.PLC_ID, PLC.PLC_DIV]
+      inferred_business_rules: [Must exist in PLC table, Must be positive integer]
+
+    - column_name: COV_ID
+      description: Reference to the type of coverage being provided
+      data_type: numerical
+      potential_correlations: [COV.C1, COV.C2]
+      inferred_business_rules: [Must exist in COV table, Must be positive integer]
+
+    - column_name: PLC_COVLMT
+      description: Coverage limit amount for this specific policy coverage
+      data_type: numerical
+      potential_correlations: [PLC.PLC_COVLMT, CLM.CLM_AMT]
+      inferred_business_rules: [Must be greater than 0, Should not exceed policy's total coverage limit]
+
+    - column_name: PLC_COV_EFF
+      description: Effective date of the coverage for this policy
+      data_type: date
+      potential_correlations: [PLC.PLC_EFF]
+      inferred_business_rules: [Must not be null, Must be >= PLC.PLC_EFF, Must be <= PLC_COV_EXP]
+
+    - column_name: PLC_COV_EXP
+      description: Expiration date of the coverage for this policy
+      data_type: date
+      potential_correlations: [PLC.PLC_EXP]
+      inferred_business_rules: [Must not be null, Must be >= PLC_COV_EFF, Must be <= PLC.PLC_EXP]
+- table_name: ADJ
+  description: The Adjuster (ADJ) table stores information about insurance claims adjusters who handle and process claims. It contains details about adjuster specializations, contact information, and their assignments. The table shows a hierarchical structure of adjusters based on their specialization levels (Standard, Complex, High-Value) which likely correlates with claim complexity and amounts.
+  keys: Primary Key - ADJ_ID, Referenced as Foreign Key in CLM table (CLM.ADJ_ID)
+  synonyms: Claims Adjuster, Loss Adjuster, Claims Handler, Claims Examiner
+  join_conditions: ADJ.ADJ_ID-JOINS-CLM.ADJ_ID
+  columns:
+   - column_name: ADJ_ID
+     description: Unique identifier for each adjuster in the system
+     data_type: numerical
+     potential_correlations: [CLM.ADJ_ID]
+     inferred_business_rules: [Must be unique, Must be positive integer]
+
+   - column_name: ADJ_NM
+     description: Full name of the adjuster
+     data_type: text
+     potential_correlations: [CLM.CLM_STAT, CLM.CLM_AMT]
+     inferred_business_rules: [Cannot be null, Must contain at least first and last name]
+
+   - column_name: ADJ_CONTACT
+     description: Contact phone number for the adjuster
+     data_type: numerical
+     potential_correlations: [CLM.CLM_RPT, CLM.CLM_STAT]
+     inferred_business_rules: [Must be valid phone number format, Must be unique]
+
+   - column_name: ADJ_SPCL
+     description: Adjuster's specialization or expertise level
+     data_type: categorical(Standard, Complex, High-Value)
+     potential_correlations: [CLM.CLM_AMT, CLM.LOSS_TYPE, CLM.CLM_STAT]
+     inferred_business_rules: [Must be one of defined specialization types, High-Value adjusters typically handle larger claim amounts, Complex adjusters handle specific loss types]
+- table_name: SUR
+  description: The Surcharge table stores additional charges applied to insurance policies for various reasons such as late payments, renewal increases, or other special circumstances. It tracks the type, amount, and description of surcharges associated with specific policies.
+  keys: Primary Key - SUR_ID, Foreign Key - PLC_ID references PLC.PLC_ID
+  synonyms: Additional Charges, Policy Penalties, Extra Fees, Rate Adjustments
+  join_conditions: SUR.PLC_ID-JOINS-PLC.PLC_ID
+  columns:
+    - column_name: SUR_ID
+      description: Unique identifier for each surcharge record
+      data_type: numerical
+      potential_correlations: []
+      inferred_business_rules: [Must be unique, Must be positive integer]
+
+    - column_name: PLC_ID
+      description: Reference to the policy associated with the surcharge
+      data_type: numerical
+      potential_correlations: [PLC.PLC_ID, PLC.PLC_PREM, PLC.PLC_STAT]
+      inferred_business_rules: [Must exist in PLC table, Must be valid active policy]
+
+    - column_name: SUR_TYPE
+      description: Category or classification of the surcharge
+      data_type: categorical(Late Payment, Renewal Increase, Other)
+      potential_correlations: [PLC.PLC_STAT, PLC.PLC_RENEW]
+      inferred_business_rules: [Must be one of defined categories, Late Payment only for active policies]
+
+    - column_name: SUR_AMT
+      description: Monetary amount of the surcharge
+      data_type: numerical
+      potential_correlations: [PLC.PLC_PREM, PLC.PLC_COVLMT]
+      inferred_business_rules: [Must be positive amount, Should not exceed certain percentage of premium]
+
+    - column_name: SUR_DESC
+      description: Detailed description explaining the reason for surcharge
+      data_type: text
+      potential_correlations: [SUR_TYPE]
+      inferred_business_rules: [Must not be empty, Must correspond to surcharge type]
+- table_name: CLM
+  description: The Claims table stores information about insurance claims filed against commercial property policies. It captures claim details including dates, loss types, amounts, status, and assigned adjusters. The table tracks the lifecycle of claims from reporting through closure.
+  keys: Primary Key - CLM_ID, Foreign Keys - PLC_ID references PLC.PLC_ID, ADJ_ID references ADJ.ADJ_ID
+  synonyms: Claims, Loss Reports, Insurance Claims, Claim Records
+  join_conditions: CLM.PLC_ID-JOINS-PLC.PLC_ID, CLM.ADJ_ID-JOINS-ADJ.ADJ_ID, PLC.INS_ID-JOINS-INS.INS_ID
+  columns:
+   - column_name: CLM_ID
+     description: Unique identifier for each claim record
+     data_type: numerical
+     potential_correlations: [PLC.PLC_ID]
+     inferred_business_rules: [Must be unique, Must be positive integer]
+
+   - column_name: PLC_ID 
+     description: Reference to the policy under which the claim is filed
+     data_type: numerical
+     potential_correlations: [PLC.PLC_ID, PLC.PLC_COVLMT]
+     inferred_business_rules: [Must reference valid policy, Policy must be active when claim filed]
+
+   - column_name: CLM_NUM
+     description: Business-friendly claim reference number
+     data_type: text
+     potential_correlations: [PLC.PLC_NUM]
+     inferred_business_rules: [Must follow format CLM-XXXX, Must be unique]
+
+   - column_name: CLM_DT
+     description: Date when the loss/damage occurred
+     data_type: date
+     potential_correlations: [PLC.PLC_EFF, PLC.PLC_EXP]
+     inferred_business_rules: [Must be within policy effective and expiry dates, Cannot be future date]
+
+   - column_name: LOSS_TYPE
+     description: Category of loss/damage that occurred
+     data_type: categorical(Fire, Water Damage, Theft, Auto, Other)
+     potential_correlations: [PLC.PLC_DIV, COV.COV_TYPE]
+     inferred_business_rules: [Must match covered perils in policy]
+
+   - column_name: CLM_AMT
+     description: Amount claimed/paid for the loss
+     data_type: numerical
+     potential_correlations: [PLC.PLC_COVLMT]
+     inferred_business_rules: [Must be positive, Cannot exceed policy coverage limit]
+
+   - column_name: CLM_STAT
+     description: Current status of the claim
+     data_type: categorical(Open, In Progress, Pending Review, Closed)
+     potential_correlations: [CLM_CLOSE]
+     inferred_business_rules: [Must be valid status value, Closed claims must have close date]
+
+   - column_name: LOSS_DESC
+     description: Detailed description of the loss/damage
+     data_type: text
+     potential_correlations: [LOSS_TYPE]
+     inferred_business_rules: [Cannot be empty]
+
+   - column_name: CLM_RPT
+     description: Timestamp when claim was reported
+     data_type: timestamp
+     potential_correlations: [CLM_DT]
+     inferred_business_rules: [Must be after loss date, Cannot be future timestamp]
+
+   - column_name: CLM_CLOSE
+     description: Date when claim was closed/settled
+     data_type: date
+     potential_correlations: [CLM_STAT, CLM_DT]
+     inferred_business_rules: [Must be after claim date, Required if status is Closed]
+
+   - column_name: ADJ_ID
+     description: Reference to adjuster assigned to the claim
+     data_type: numerical
+     potential_correlations: [ADJ.ADJ_SPCL]
+     inferred_business_rules: [Must reference valid adjuster, Required for active claims]

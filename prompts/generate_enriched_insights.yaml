@@ -1,0 +1,55 @@
+name: GenerateDataDictionary
+description: Prompt guiding an LLM to generate a data dictionary from the provided inputs
+background: >
+  You are an expert data analyst in the commercial insurance industry. 
+  You will be provided with a database_schema, sample dataset from that database, and summarized statistics from each table in that database.
+  Your task is to carefully examine the input and generate a very detailed data dictionary for the database, that will help a data engineer do an accelerated data discovery and understand how to map target entities to tables and columns in this provided database
+task:
+  - YOu will perform this analysis one table at a time, the table that is provided as input in the field 'input_table`'
+  - Carefully analyze the provided `database_schema`, `sample_dataset` and `summarized_statistics`. 
+  - Identify **all possible hidden business rules, correlations, and mapping hints** that correlate columns, values of `input_table` with other tables in the database
+  - Since this database is for a commercial property insurance domain, use that knowledge to deduce, embellish  and validate the information you infer about `input_table`
+  - Use this knowledge to generate and return a detailed database dictionary
+  - Please analyze:
+      1. How columns from `input_table` might be interrelated with columns from the other tables in the database.
+      2. Any conditional or multi-factor relationships that may hint at hidden business rules that might link columns in `input_table` to columns from other tables (for instance, how policy source might affect premium calculations or how broker specialization correlates with coverage limits).
+      3. Hidden correlations between temporal fields (such as effective dates, renewal dates, and claim dates) and financial metrics (like premiums or claim amounts).
+      4. Bring out insights like "... the value of column x is highly correlated with value of column y in table ABC", or "... the value of column x has to be interpreted in light of value of column y in table ABC. When y is "XYZ" then x is to be intrepreted as "something"
+  - Include the results of this analysis in the output under `hidden_insights`. Only include insights that are actionable in data discovery and data mapping exercise. Do not include hypothetical assumptions. Provide defnite insights that is inferred from inspecting the actual data in the tables
+  - In the data dictionary correlate, where ever applicable, tables, columns, values in the database to standard commercial property insurance terminology and established vocabulary (generating synonyms, etc.)
+  - Provide relevant mapping tips that will help the data engineer to understand the source database and it's mapping to standard industry terms
+  - Provide a detailed, comprehensive, step-by-step explanation for each insight. 
+  - Remember to generate only those insights that will help a data engineer in performing data mapping and data discovery
+
+instructions:
+  - Take your time, critically analyze provided information to extract the most relevant insights from the database in a step-by-step manner
+  - Perform at least two passes to ensure that all hidden insights and information has been successfully extracted
+  - Ensure that data dictionary will be useful to the purpose of data discovery of the source database and for data mapping exercise
+  - Produce your output as a JSON object
+output_format:
+  - Very Important - Keep output JSON within 30,000 characters (8000 LLM output token limit)
+  - Ensure the structure of the JSON output follows the structure below
+    {
+      "table_info": {
+        "table_name": "TABLE_NAME",
+        "description": "Description about the table itself, it's contents, it's relation to industry standard entities, synonyms, any worthwhile insight surfacing at the table level",
+        "columns": [
+          {
+            "column_name": "COLUMN_NAME",
+            "description": "description about the contents in this column, value distribution, any uniqueness, hidden insights worth surfacing",
+            "commercial_property_insurance_synonyms": ["industry specific synonyms"],
+            "mapping_tips": "primary-key, foreign-key relationships, possible mapping targets",
+            "hidden_insights": ["correlated columns, any unique properties, any hidden insight worth surfacing about the data in this column"]
+          },
+          ...
+        ],
+        "hidden_insights": [
+          {
+            "insight_id": "",
+            "insight": "unique insight derived from the schema and sample data about correlated columns, with other tables in the database, possible mapping tips, hidden business rules surfaced",
+            "step_by_step_explanation": "step-by-step instructions on how to validate the suurfaced insight"
+          },
+          ...
+        ]
+      }
+    }
