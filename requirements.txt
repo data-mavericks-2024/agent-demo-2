@@ -1,0 +1,13 @@
+PyYAML>=6.0
+requests
+ruamel.yaml
+#ipykernel
+#scikit-learn
+streamlit
+tqdm
+pandas
+python-dotenv
+openai 
+jsonschema
+streamlit_mermaid
+snowflake-snowpark-python
